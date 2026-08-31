@@ -111,6 +111,9 @@ COORDINATES = {
                 "rightSide": Coordinates(1819, 221),
                 "resonatorName": Coordinates(200, 200, 300, 40),
                 "resonatorLevel": Coordinates(200, 254, 150, 36),
+                # aggregate stat rows (HP through crit damage) on the status
+                # section — the ground truth the planners compare against
+                "totalStats": Coordinates(180, 330, 400, 280),
                 "weaponName": Coordinates(205, 204, 330, 38),
                 "weaponLevel": Coordinates(200, 266, 150, 34),
                 "weaponRank": Coordinates(210, 428, 120, 32),
@@ -210,6 +213,7 @@ COORDINATES = {
                 "rightSide": Coordinates(1592, 215),
                 "resonatorName": Coordinates(175, 194, 263, 39),
                 "resonatorLevel": Coordinates(175, 247, 131, 35),
+                "totalStats": Coordinates(158, 321, 350, 272),
                 "weaponName": Coordinates(179, 198, 289, 37),
                 "weaponLevel": Coordinates(175, 259, 131, 33),
                 "weaponRank": Coordinates(184, 416, 105, 31),

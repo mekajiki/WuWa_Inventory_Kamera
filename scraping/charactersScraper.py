@@ -146,6 +146,7 @@ def scrapeResonator(image: np.ndarray, screenInfo: ScreenInfo, characters: dict,
 
     characters[resonatorID]['level'] = characterLvl
     characters[resonatorID]['ascension'] = ascensionLvl
+    characters[resonatorID]['stats'] = readTotalStats(image, screenInfo)
 
     return resonatorID, False
 
@@ -227,6 +228,35 @@ def scrapeSkills(image: np.ndarray, screenInfo: ScreenInfo, characters: dict, re
         if index not in levels:
             logger.debug(f'Failed scraping skill level for column {index}')
         characters[resonatorID]['skills'][SKILL_LEGENDS[index]] = levels.get(index, 1)
+
+def readTotalStats(image: np.ndarray, screenInfo: ScreenInfo) -> dict:
+    """Read the aggregate stat rows (HP through crit damage) from the status
+    section — actual in-game totals including weapon substats, inherent
+    skills, and stat-bonus nodes."""
+    from scraping.echoesScraper import matchStatName, normalizeValue
+
+    area = screenInfo.characters.totalStats
+    boxes = readTextBoxes(image[int(area.y):int(area.y + area.h), int(area.x):int(area.x + area.w)])
+    labels = [((y0 + y1) / 2, text) for x0, y0, x1, y1, text in boxes if x0 < area.w * 0.55]
+    values = [((y0 + y1) / 2, text) for x0, y0, x1, y1, text in boxes if x0 >= area.w * 0.55]
+
+    stats = {}
+    for labelY, labelText in labels:
+        statName = matchStatName(labelText)
+        if not statName:
+            continue
+        value = next((t for y, t in values if abs(y - labelY) < area.h * 0.06), None)
+        if value is None:
+            continue
+        value = normalizeValue(value)
+        try:
+            if value.endswith('%'):
+                stats[f'{statName}%'] = float(value[:-1])
+            else:
+                stats[statName] = int(float(value))
+        except ValueError:
+            pass
+    return stats
 
 def parseEquippedEcho(image: np.ndarray, screenInfo: ScreenInfo):
     """Parse the right-hand panel of the echo swap screen (opened by clicking
