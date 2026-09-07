@@ -306,6 +306,9 @@ def parseEquippedEcho(image: np.ndarray, screenInfo: ScreenInfo):
             statRows.append((x0, (y0 + y1) / 2, text))
 
     name = ''.join(text for _, _, text in sorted(nameParts))
+    # short names sometimes merge with the COST row into one box
+    # (黒棘熊cöST 3C); cut everything from a COST-like token onward
+    name = re.split(r'c[oö0]st', name, maxsplit=1, flags=re.IGNORECASE)[0].strip()
 
     if level == 0:
         # the +N box occasionally goes unread entirely; retry with a

@@ -73,6 +73,10 @@ def _matchEchoOne(name: str) -> str | None:
         containing = [candidate for candidate in echoesID if name in candidate]
         if len(containing) == 1:
             return containing[0]
+    # trailing noise merged into the name box: a known name as unique prefix
+    prefixes = [candidate for candidate in echoesID if len(candidate) >= 3 and name.startswith(candidate)]
+    if len(prefixes) == 1:
+        return prefixes[0]
     return None
 
 def matchSonata(text: str) -> str:
