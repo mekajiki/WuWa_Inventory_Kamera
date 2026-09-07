@@ -71,6 +71,24 @@ def _matchOne(name: str, candidates, cutoffs) -> str | None:
         return prefixes[0]
     return None
 
+def readLevelText(levelImage: np.ndarray) -> str:
+    """Read a "level/cap" line with both OCR paths and pick the most
+    complete result: a proper N/M pair first, otherwise the largest
+    plausible number."""
+    candidates = [
+        imageToString(levelImage, '', allowedChars=string.digits + '/'),
+        re.sub(r'[^0-9/]', '', recognizeLine(levelImage)),
+    ]
+    for text in candidates:
+        if re.fullmatch(r'\d{1,2}/\d{2}', text):
+            return text
+    numeric = []
+    for text in candidates:
+        found = re.match(r'\d+', text)
+        if found and int(found.group()) <= 90:
+            numeric.append((int(found.group()), text))
+    return max(numeric)[1] if numeric else ''
+
 def splitLevel(text: str) -> list[str]:
     """Split an OCR'd "level/cap" string; the slash is often lost, in which
     case the last two digits are the (always two-digit) ascension cap."""
@@ -133,9 +151,10 @@ def scrapeResonator(image: np.ndarray, screenInfo: ScreenInfo, characters: dict,
     if levelHash in _cache:
         level = _cache[levelHash]
     else:
-        # the level line mixes font sizes, which the recognizer alone garbles;
-        # the full detection pipeline is more reliable here
-        level = splitLevel(imageToString(levelImage, '', allowedChars=string.digits + '/'))
+        # the level line mixes font sizes; neither OCR path is reliable alone
+        # (detection sometimes yields a bare "9" for "Lv 90/90"), so read it
+        # both ways and prefer a full "level/cap" answer
+        level = splitLevel(readLevelText(levelImage))
         _cache[levelHash] = level
 
     try: ascensionLvl = ASCENSION_LEVELS.index(int(level[1]))
@@ -393,7 +412,9 @@ def parseEquippedEcho(image: np.ndarray, screenInfo: ScreenInfo):
 def scrapeEquippedEchoes(controller: WindowsInputController, screenInfo: ScreenInfo, characters: dict, resonatorID: str):
     """Click each equipped echo slot and read the swap screen's detail panel.
     Skipped for low-level characters, which have nothing meaningful equipped."""
-    if characters[resonatorID]['level'] < 40:
+    # skip unbuilt characters — but a misread level must not drop a built
+    # one, so a high total HP counts as built too
+    if characters[resonatorID]['level'] < 40 and characters[resonatorID].get('stats', {}).get('hp', 0) < 8000:
         return
 
     sawSwapScreen = False
